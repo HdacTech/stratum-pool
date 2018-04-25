@@ -12,9 +12,9 @@
         "litecoin",
         "scrypt"
     ],
-    "homepage": "https://github.com/foxer666/node-stratum-pool",
+    "homepage": "https://github.com/Hdactech/stratum-pool",
     "bugs": {
-        "url": "https://github.com/foxer666/node-stratum-pool/issues"
+        "url": "https://github.com/Hdactech/stratum-pool/issues"
     },
     "license": "GPL-2.0",
     "author": "Matthew Little",

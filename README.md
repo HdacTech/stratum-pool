@@ -14,7 +14,7 @@ ePoW를 적용하기 위해서 몇 가지 추가되고 수정된 부분이 있�
 ePoW를 적용하는데 있어서 그에 필요한 상태값을 관리할 필요성이 있다.
 새로 추가된 dataObject.js는 HDAC Node로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 결정한다.
 
-```
+```javascript
 /**
  * @HDAC
  * This is an Object for checking the status of NOMP mining
@@ -74,7 +74,7 @@ var dataObject = module.exports = function dataObject(){
 따라서 그에 해당하는 로직을 구현해야 한다.
 
 다음 추가된 함수는 NOMP의 miningStatus를 보고 ePoW를 계속 유지할지 해제할지를 결정한다.
-```
+```javascript
 /* 
      * @HDAC
      * Logic to check whether to want to keep the applied ePoW.
@@ -94,7 +94,7 @@ var dataObject = module.exports = function dataObject(){
 다음 추가된 함수들은 Pool에서 ePoW를 적용하거나 해제할 때 호출하는 함수이다.    
 결과적으로 이 함수들이 호출되면 miningStatus의 상태를 변경하게 되며 ePoW를 적용시켜 Stratum Server에 연결되어 있는 clients의 ip를 등록해서 차단하거나 등록된 ip를 삭제해서 ePoW를 해제하게 된다.
     
-```
+```javascript
  /**
      * @HDAC
      * The function that release ePoW.
@@ -127,7 +127,7 @@ NOMP가 실행되면 poolWorker가 Thread처럼 작동한다. 따라서 Redis의
 ### Redis 구성 및 Block Winodw Size Polling Event 등록
 Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
 
-```
+```javascript
 /*
      * @HADC
      * blockWindowSize polling interval id

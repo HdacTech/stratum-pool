@@ -265,5 +265,5 @@ Block Window Size Polling 이트는 주기적으로 **`HDAC Node`** 로부터 �
 이 때 얻어온 blockWindowSize를 dataObject객체에 담으며 NOMP의 miningStatus의 상태값을 보고 ePoW가 적용되어 있다면 blockWindowSize로 해제 여부를 결정하게 된다.
 
 ***
-이 외의 ePoW와 관련된 변경 및 추가 로직과 관련된 자세한 부분은 코멘트의 @HDAC 태그를 통해서 좀 더 자세하게 살펴 볼 수 있다.
+이 외의 ePoW와 관련된 변경 및 추가 로직과 관련된 자세한 부분은 코멘트의 **`@HDAC`** 태그를 통해서 좀 더 자세하게 살펴 볼 수 있다.
 

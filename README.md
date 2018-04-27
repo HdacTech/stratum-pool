@@ -3,7 +3,7 @@ High performance Stratum poolserver in Node.js for [HDAC Node Open Mining Portal
 
 This Stratum Pool is ePoW-based Version Using Open Source
 
-See [Open Source Stratum Pool](https://github.com/zone117x/node-stratum-pool)
+See [About Stratum Pool](https://github.com/zone117x/node-stratum-pool)
 
 ## Customizing for ePoW
 

@@ -12,7 +12,7 @@ ePoW를 적용하기 위해서 몇 가지 추가되고 수정된 부분이 있�
 ### 1. dataObject.js
 
 ePoW를 적용하는데 있어서 그에 필요한 상태값을 관리할 필요성이 있다.
-새로 추가된 dataObject.js는 **`HDAC Node`**로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 결정한다.
+새로 추가된 dataObject.js는 **`HDAC Node`** 로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 결정한다.
 
 ```javascript
 /**
@@ -261,7 +261,7 @@ Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
         );
     }	
 ```
-Block Window Size Polling 이트는 주기적으로 **`HDAC Node`**로부터 변경될 소지가 있는 Block Window Size를 가져온다.    
+Block Window Size Polling 이트는 주기적으로 **`HDAC Node`** 로부터 변경될 소지가 있는 Block Window Size를 가져온다.    
 이 때 얻어온 blockWindowSize를 dataObject객체에 담으며 NOMP의 miningStatus의 상태값을 보고 ePoW가 적용되어 있다면 blockWindowSize로 해제 여부를 결정하게 된다.
 
 ***

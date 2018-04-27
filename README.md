@@ -3,7 +3,7 @@ High performance Stratum poolserver in Node.js for [HDAC Node Open Mining Portal
 
 This Stratum Pool is ePoW-based Version Using Open Source
 
-See [Open Source Stratum Pool](https://github.com/foxer666/node-stratum-pool)
+See [Open Source Stratum Pool](https://github.com/zone117x/node-stratum-pool)
 
 ## Customizing for ePoW
 
@@ -12,7 +12,7 @@ ePoW를 적용하기 위해서 몇 가지 추가되고 수정된 부분이 있�
 ### 1. dataObject.js
 
 ePoW를 적용하는데 있어서 그에 필요한 상태값을 관리할 필요성이 있다.
-새로 추가된 dataObject.js는 HDAC NODE로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 정의한다.
+새로 추가된 dataObject.js는 HDAC Node로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 결정한다.
 
 ```
 /**
@@ -92,7 +92,7 @@ var dataObject = module.exports = function dataObject(){
 ```
 
 다음 추가된 함수들은 Pool에서 ePoW를 적용하거나 해제할 때 호출하는 함수이다.    
-결과적으로 이 함수들이 호출하게 되면 miningStatus의 상태를 변경하게 되며 ePoW를 적용시켜 Stratum Server에 연결되어 있는 clients의 ip를 등록해서 차단하거나 등록된 ip를 삭제해서 ePoW를 해제하게 된다.
+결과적으로 이 함수들이 호출되면 miningStatus의 상태를 변경하게 되며 ePoW를 적용시켜 Stratum Server에 연결되어 있는 clients의 ip를 등록해서 차단하거나 등록된 ip를 삭제해서 ePoW를 해제하게 된다.
     
 ```
  /**
@@ -121,3 +121,147 @@ var dataObject = module.exports = function dataObject(){
     }
 ```
 그 외의 ePoW와 관련된 자세한 내용은 stratum.js에 @HADC태그가 달린 comment를 확인하면 알 수 있다.
+
+## 3. pool.js
+NOMP가 실행되면 poolWorker가 Thread처럼 작동한다. 따라서 Redis의 Pub/Sub기능을 활용해 채널 메세지를 두어 특정 이벤트가 발생시 채널을 통해서 메세지를 주고 받게 되며 그 메세지를 통해 ePoW적용 여부를 결정하게 된다.    
+
+### Redis 구성 및 Block Winodw Size Polling Event 등록
+Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
+
+```
+/*
+     * @HADC
+     * blockWindowSize polling interval id
+     * pub/sub channel name of Redis
+     */
+    var blockWindowSizePollingIntervalId;
+    var redisChannels = ["applyEPOW", "releaseEPOW"];
+
+    var emitLog        = function(text) { _this.emit('log', 'debug'  , text); };
+    var emitWarningLog = function(text) { _this.emit('log', 'warning', text); };
+    var emitErrorLog   = function(text) { _this.emit('log', 'error'  , text); };
+    var emitSpecialLog = function(text) { _this.emit('log', 'special', text); };
+    var publisher = redis.createClient(options.redis.port, options.redis.host);
+    var subscriber = redis.createClient(options.redis.port, options.redis.host);
+
+    if (!(options.coin.algorithm in algos)){
+        emitErrorLog('The ' + options.coin.algorithm + ' hashing algorithm is not supported.');
+        throw new Error();
+    }
+
+    this.start = function(){
+        SetupVarDiff();
+        SetupApi();
+        SetupDaemonInterface(function(){
+            DetectCoinData(function(){
+                SetupRecipients();
+                SetupJobManager();
+                OnBlockchainSynced(function(){
+                    GetFirstJob(function(){
+                        SetupBlockPolling();
+                        /*
+                         * @HDAC
+                         * Check blockWindowSize from the Hdac core.
+                         * If 'reward' key value of coin.json is ePoW, apply SetupBlockWindowSize and RedisSubscriberConfig.
+                         */
+                        if(options.coin.reward == "ePoW") {
+                        	SetupBlockWindowSize();
+                        	RedisSubscriberConfig();
+                        }
+                        SetupPeer();
+                        StartStratumServer(function(){
+                            OutputPoolInfo();
+                            _this.emit('started');
+                        });
+                    });
+                });
+            });
+        });
+    };
+
+    /**
+     * @HDAC
+     * Register the channel of redis' Subscribe and operate logic to apply or release ePoW according to the channel name.
+     */
+    function RedisSubscriberConfig() {
+    	subscriber.on("message", function(channel, message) {
+    		emitLog("receive From Channel '" + channel + "', message is "+message);
+    		if (_this.stratumServer) {
+    			if(channel == redisChannels[0]) {
+    				var findBlocks = parseInt(message);
+    				sharedData.setNextBlocks(findBlocks);
+    				miningStatus = false;
+    				_this.stratumServer.applyEpow(findBlocks);
+    			} else {
+    				miningStatus = true;
+    				_this.stratumServer.releaseEpow();
+    			}
+    		}
+    		  
+		});
+
+		subscriber.subscribe(redisChannels);
+    }
+
+	/**
+     * @HDAC
+     * A function that periodically flushes getblockwindowsize to the Hdac core for blockWindowSize values needed for ePoW application
+     */
+    function SetupBlockWindowSize(){
+        if (typeof options.blockWindowSizeRefreshInterval !== "number" || options.blockWindowSizeRefreshInterval <= 0){
+            emitLog('BlockWindowSize polling has been disabled');
+            return;
+        }
+
+        var pollingInterval = options.blockWindowSizeRefreshInterval;
+
+        blockWindowSizePollingIntervalId = setInterval(function () {
+            GetBlockWindowSize(function(result){
+            	var isSuccess = !result[0].error;
+        		if(isSuccess) {
+        			// When miningStatus is true, it sets the information received from the Hdac core.
+        			var findBlocks = result[0].response.blocks;
+        			var blockWindowSize = result[0].response.blockwindowsize;
+        			if(miningStatus) {
+        				//sharedData.setBlockWindowSize(blockWindowSize);
+	        			sharedData.setBlockWindowSize(10);
+	        			emitLog('getblockwindowsize call and update blockWindowSize successfully');
+        			} else {
+        				// When miningStatus is false, you must decide whether to release the ePoW by comparing the values of the blocks of received information with the currentHeight set in the current sharedData.
+	        			//sharedData.setBlockWindowSize(blockWindowSize);
+        				sharedData.setBlockWindowSize(10);
+	        			sharedData.decise(function(result){
+	        				// After decise function verify, and decide whether to apply pub/sub according to the result value.
+	        				// If result is true, ePoW is released.
+	        				if(result) {
+	        					// Publish to following channel through Redis.
+	        					publisher.publish(redisChannels[1], redisChannels[1]);
+	        				}
+	        			});
+        			}
+        		} else {
+        			emitLog(result[0].error);
+        		}
+            	
+            });
+   
+        }, pollingInterval);
+    }
+
+    /**
+     * @HDAC
+     * SetupBlockWindowSize function is the function that is called.
+     * After send command 'getblockwindowsize' on Hdac core, and get information
+     */
+    function GetBlockWindowSize(callback){
+        _this.daemon.cmd('getblockwindowsize',
+            [],
+            function(result){
+        		callback(result)
+            }
+        );
+    }	
+```
+Block Window Size Polling 이벤트는 주기적으로 HDAC Node로부터 변경될 소지가 있는 Block Window Size를 가져온다.    
+이 때 얻어온 blockWindowSize를 dataObject객체에 담으며 NOMP의 miningStatus의 상태값을 보고 ePoW가 적용되어 있다면 blockWindowSize로 해제 여부를 결정하게 된다.
+

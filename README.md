@@ -120,7 +120,6 @@ var dataObject = module.exports = function dataObject(){
     	}
     }
 ```
-그 외의 ePoW와 관련된 자세한 내용은 stratum.js에 @HADC태그가 달린 comment를 확인하면 알 수 있다.
 
 ## 3. pool.js
 NOMP가 실행되면 poolWorker가 Thread처럼 작동한다. 따라서 Redis의 Pub/Sub기능을 활용해 채널 메세지를 두어 특정 이벤트가 발생시 채널을 통해서 메세지를 주고 받게 되며 그 메세지를 통해 ePoW적용 여부를 결정하게 된다.    
@@ -264,4 +263,7 @@ Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
 ```
 Block Window Size Polling 이벤트는 주기적으로 HDAC Node로부터 변경될 소지가 있는 Block Window Size를 가져온다.    
 이 때 얻어온 blockWindowSize를 dataObject객체에 담으며 NOMP의 miningStatus의 상태값을 보고 ePoW가 적용되어 있다면 blockWindowSize로 해제 여부를 결정하게 된다.
+
+***
+이 외의 ePoW와 관련된 변경 및 추가 로직과 관련된 자세한 부분은 코멘트의 @HDAC 태그를 통해서 좀 더 자세하게 살펴 볼 수 있다.
 

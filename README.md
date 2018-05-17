@@ -7,12 +7,12 @@ See [About Stratum Pool](https://github.com/zone117x/node-stratum-pool)
 
 ## Customizing for ePoW
 
-ePoW를 적용하기 위해서 몇 가지 추가되고 수정된 부분이 있다.
+There are some added and modified parts to apply ePOW.
 
 ### 1. dataObject.js
 
-ePoW를 적용하는데 있어서 그에 필요한 상태값을 관리할 필요성이 있다.
-새로 추가된 dataObject.js는 **`HDAC Node`** 로부터 넘어오는 blockWindowSize를 통해서 현재의 block height를 비교해서 ePoW 적용 시점을 결정한다.
+There is a need to manage the state values necessary for applying ePOW.    
+The newly added dataObject.js determine when to apply ePOW, compares the current block height with the blockWindowSize passed from the **`HDAC Node`**.
 
 ```javascript
 /**
@@ -70,10 +70,10 @@ var dataObject = module.exports = function dataObject(){
 ```
 
 ## 2. stratum.js
-조건에 부합되어 ePoW가 적용되면 Stratum Server에서는 NOPM로 연결되는 miner들의 접근을 차단하게 되며 해제시에는 접근을 허용하는 방식이다.    
-따라서 그에 해당하는 로직을 구현해야 한다.
+If ePoW is applied in accordance with the condition, Stratum Server will block access to miners connected to NOMP and allow access when it is released.       
+Therefore, you have to implement the corresponding logic.
 
-다음 추가된 함수는 NOMP의 miningStatus를 보고 ePoW를 계속 유지할지 해제할지를 결정한다.
+The following added function will look at NOMP's miningStatus to determine whether to keep ePoW on or off.    
 ```javascript
 /* 
      * @HDAC
@@ -91,8 +91,9 @@ var dataObject = module.exports = function dataObject(){
     };
 ```
 
-다음 추가된 함수들은 Pool에서 ePoW를 적용하거나 해제할 때 호출하는 함수이다.    
-결과적으로 이 함수들이 호출되면 miningStatus의 상태를 변경하게 되며 ePoW를 적용시켜 Stratum Server에 연결되어 있는 clients의 ip를 등록해서 차단하거나 등록된 ip를 삭제해서 ePoW를 해제하게 된다.
+The following functions are called when applying or releasing ePOW in Pool.      
+As a result, when these functions are called, the state of miningStatus is changed.    
+ePoW is applied to register clients of the clients connected to the stratum server and block or delete the registered ip to release ePoW.    
     
 ```javascript
  /**
@@ -122,10 +123,11 @@ var dataObject = module.exports = function dataObject(){
 ```
 
 ## 3. pool.js
-NOMP가 실행되면 poolWorker가 Thread처럼 작동한다. 따라서 Redis의 Pub/Sub기능을 활용해 채널 메세지를 두어 특정 이벤트가 발생시 채널을 통해서 메세지를 주고 받게 되며 그 메세지를 통해 ePoW적용 여부를 결정하게 된다.    
+When NOMP is running, poolWorker behaves like a Thread.    
+Therefore, using Pub/Sub function of Redis, a channel message is placed to send & receive a message through a channel when a specific event occurs, and the ePoW application is determined through the message.     
 
-### Redis 구성 및 Block Winodw Size Polling Event 등록
-Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
+### Redis configuration and Block Winodw Size Polling Event registration
+ Create a Redis Pub/Sub channel and activate it when NOMP starts.
 
 ```javascript
 /*
@@ -261,9 +263,8 @@ Redis Pub/Sub 채널을 생성하고 NOPM가 시작할 때 활성화 시킨다.
         );
     }	
 ```
-Block Window Size Polling 이트는 주기적으로 **`HDAC Node`** 로부터 변경될 소지가 있는 Block Window Size를 가져온다.    
-이 때 얻어온 blockWindowSize를 dataObject객체에 담으며 NOMP의 miningStatus의 상태값을 보고 ePoW가 적용되어 있다면 blockWindowSize로 해제 여부를 결정하게 된다.
+Block Window Size Polling event periodically retrieves Block Window Size that can be changed from H**`HDAC Node`**.    
+The blockWindowSize obtained in this case is stored in the dataObject object, and the state of the miningStatus of NOMP is displayed. If ePoW is applied, it is decided to be released to blockWindowSize.    
 
 ***
-이 외의 ePoW와 관련된 변경 및 추가 로직과 관련된 자세한 부분은 코멘트의 **`@HDAC`** 태그를 통해서 좀 더 자세하게 살펴 볼 수 있다.
-
+More details about other changes and additional logic related to ePoW can be found in the **`@HDAC`** tag of the comments in more detail.
